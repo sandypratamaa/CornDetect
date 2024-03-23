@@ -1,10 +1,11 @@
 import streamlit as st
-from PIL import Image
+import pandas as pd
 import numpy as np
-import tensorflow as tf
-from flask import Flask, render_template, request, jsonify
-from werkzeug.wrappers import Request, Response
 import os
+import tensorflow as tf
+from PIL import Image
+from werkzeug.utils import secure_filename
+import base64
 
 # Initialize Flask app
 app = Flask(__name__)
