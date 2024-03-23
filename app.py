@@ -1,15 +1,3 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import os
-import tensorflow as tf
-from PIL import Image
-from werkzeug.utils import secure_filename
-import base64
-
-# Load model
-model = tf.keras.models.load_model("modelcorn.h5")
-
 <!DOCTYPE html>
 <html lang="en">
 
