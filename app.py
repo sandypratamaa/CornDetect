@@ -10,9 +10,6 @@ import base64
 # Load model
 model = tf.keras.models.load_model("modelcorn.h5")
 
-# Define classes
-corndiseases_classes = ["Corn Common Rust", "Corn Gray Leaf Spot", "Corn Healthy", "Corn Northern Leaf Blight"]
-
 <!DOCTYPE html>
 <html lang="en">
 
