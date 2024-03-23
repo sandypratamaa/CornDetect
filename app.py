@@ -1,105 +1,55 @@
-from flask import Flask,render_template,request,jsonify
-from werkzeug.utils import secure_filename
-import pandas as pd
-import numpy as np
-import gym
-import pickle
-import os
-import tensorflow as tf
+import streamlit as st
 from PIL import Image
-from flask_ngrok import run_with_ngrok
+import numpy as np
+import tensorflow as tf
+from flask import Flask, render_template, request, jsonify
+from werkzeug.wrappers import Request, Response
+import os
 
+# Initialize Flask app
 app = Flask(__name__)
-
-@app.route('/', methods=["GET"])
-def hello_world():
-    return render_template("index.html")
-
-# =[Variabel Global]=============================
-
-app = Flask(__name__, static_url_path='/static')
-
-app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024
-app.config['UPLOAD_EXTENSIONS']  = ['.jpg','.JPG']
-app.config['UPLOAD_PATH']        = './static/img/uploads/'
-
-# load model
 model = tf.keras.models.load_model("modelcorn.h5")
-
-# define classes
-corndiseases_classes = [ "Corn Common Rust", "Corn Gray Leaf Spot","Corn Healthy", "Corn Northern Leaf Blight"]
-
-# define image size
+corndiseases_classes = ["Corn Common Rust", "Corn Gray Leaf Spot", "Corn Healthy", "Corn Northern Leaf Blight"]
 IMG_SIZE = (299, 299)
 
-# =[Routing]=====================================
+# Function to predict image
+def predict_image(image):
+    # Resize image
+    resized_image = image.resize(IMG_SIZE)
+    # Convert image to numpy array
+    img_array = np.expand_dims(resized_image, 0)
+    # Predict class
+    predictions = model.predict(img_array)
+    pred_class = corndiseases_classes[np.argmax(predictions[0])]
+    return pred_class
 
-# [Routing untuk Halaman Utama atau Home]
-@app.route("/")
+# Streamlit app
+def streamlit_app():
+    st.title("Corn Disease Detection")
+
+    uploaded_file = st.file_uploader("Upload an image of corn leaf", type=["jpg", "jpeg"])
+
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Uploaded Image", use_column_width=True)
+
+        # Check if uploaded file is an image
+        if uploaded_file.type.startswith('image'):
+            pred_class = predict_image(image)
+            st.success(f"Predicted Class: {pred_class}")
+        else:
+            st.error("Please upload an image file.")
+
+# Flask routes
+@app.route('/')
 def beranda():
-	return render_template('index.html')
+    return render_template('index.html')
 
-# ROUTING untuk chatbot
-@app.route("/get")
-def get_bot_response():
-    user_input = str(request.args.get('msg'))
-    result = generate_response(user_input)
-    return result
-
-# [Routing untuk API]	
-@app.route("/api/deteksi",methods=['POST'])
-def apiDeteksi():
-	# Set nilai default untuk hasil prediksi dan gambar yang diprediksi
-	hasil_prediksi  = '(none)'
-	gambar_prediksi = '(none)'
-
-	# Get File Gambar yg telah diupload pengguna
-	uploaded_file = request.files['file']
-	filename      = secure_filename(uploaded_file.filename)
-	
-	# Periksa apakah ada file yg dipilih untuk diupload
-	if filename != '':
-	
-		# Set/mendapatkan extension dan path dari file yg diupload
-		file_ext        = os.path.splitext(filename)[1]
-		gambar_prediksi = '/static/img/uploads/' + filename
-		
-		# Periksa apakah extension file yg diupload sesuai (jpg)
-		if file_ext in app.config['UPLOAD_EXTENSIONS']:
-			
-			# Simpan Gambar
-			uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], filename))
-			
-			# Memuat Gambar
-			test_image         = Image.open('.' + gambar_prediksi).resize(IMG_SIZE)
-
-			img_array = np.expand_dims(test_image, 0)
-			
-
-			predictions = model.predict(img_array)
-			hasil_prediksi = corndiseases_classes[np.argmax(predictions[0])]
-
-			print(hasil_prediksi)
-			
-			# Return hasil prediksi dengan format JSON
-			return jsonify({
-				"prediksi": hasil_prediksi,
-				"gambar_prediksi" : gambar_prediksi
-			})
-		else:
-			# Return hasil prediksi dengan format JSON
-			gambar_prediksi = '(none)'
-			return jsonify({
-				"prediksi": hasil_prediksi,
-				"gambar_prediksi" : gambar_prediksi
-			})
-
-
-# =[Main]========================================		
+@app.route('/streamlit')
+def run_streamlit():
+    streamlit_app()
+    return Response("Streamlit app running...")
 
 if __name__ == '__main__':
-    	
-
-	# Run Flask di localhost 
-	run_with_ngrok(app)
-	app.run()
+    from werkzeug.serving import run_simple
+    run_simple('localhost', 5000, app)
