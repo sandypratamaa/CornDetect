@@ -1,7 +1,7 @@
 import streamlit as st
 
 # Membaca isi dari file index.html
-with open('index.html', 'r') as file:
+with open('templates/index.html', 'r') as file:
     html_code = file.read()
 
 # Menampilkan HTML di aplikasi Streamlit menggunakan komponen st.components.html()
